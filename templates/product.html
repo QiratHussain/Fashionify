@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>
+    {{product_name}}
+</h2>
+<ul>
+    {% if items %}
+    {% for item in items %}
+    <li>{{item}} </li>
+    {% endfor %}
+    {% else %}
+    <p>Not found</p>
+    {% endif %}
+</ul>
+{% endblock %}

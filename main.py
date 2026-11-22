@@ -12,8 +12,8 @@ def home():
 @app.route("/search")
 def search():
     searched_item = request.args.get("search") 
-    print(searched_item)
-    return render_template("index.html", searched_item=searched_item)
+    
+    return render_template("product.html", product_name=searched_item)
 
 # ------------------------------------------------------------------------
 if __name__=="__main__":
