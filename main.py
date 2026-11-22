@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float
 import os
@@ -19,13 +20,19 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///products.db"
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
+class User( UserMixin ,db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(250), nullable=False)
+    password: Mapped[str] = mapped_column(String(250), nullable=False)
+
+
 
 class Product(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(50),nullable=False)
     img_url: Mapped[str] = mapped_column(String(500), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
-
 
 
 with app.app_context():
@@ -61,7 +68,6 @@ if __name__=="__main__":
     app.run(debug=True)
 
 
-# TODO: 3. users db
 # TODO: 5. users' products db
 # TODO: 6. product page
 # TODO: 7. not_found page
