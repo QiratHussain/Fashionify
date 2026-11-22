@@ -2,10 +2,14 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app= Flask(__name__)
 # -------------------------------- CONFIG --------------------------------
-
+app.config["SECRET_KEY"] = os.getenv("CSRF")
 
 # -------------------------------- DATABASES --------------------------------
 class Base(DeclarativeBase):
