@@ -1,4 +1,41 @@
 {% extends "base.html" %}
+{% block style %}
+.search-container {
+    display: flex;
+    width: 100%;           /* Stretches across its parent container */
+    max-width: 700px;      /* Controls how "long" the bar gets on large screens */
+    margin: 20px auto;     /* Centers the search bar on the page */
+  }
+  
+  .search-input {
+    flex: 1;               /* Forces the input to take up all remaining width */
+    padding: 12px 18px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-right: none;    /* Removes double border next to button */
+    border-radius: 25px 0 0 25px; /* Rounds the left corners */
+    outline: none;
+  }
+  
+  .search-input:focus {
+    border-color: #b565a7; /* Highlights border when typing */
+  }
+  
+  .search-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    background-color: #b565a7;
+    color: white;
+    border: 2px solid #b565a7;
+    border-radius: 0 25px 25px 0; /* Rounds the right corners */
+    cursor: pointer;
+  }
+  
+  .search-button:hover {
+    background-color: #0056b3;
+  }
+  
+{% endblock %}
 {% block content %}
 
     <!-- Main Body -->
@@ -11,6 +48,16 @@
         <!-- Content Section -->
         <section class="content-section">
             <h1>Fashionify</h1>
+
+<section>
+    <form class="search-container" action="/search" method="GET">
+        <input name="search" type="search" class="search-input" placeholder="Search for anything..." aria-label="Search" required>
+        <button type="submit" class="search-button">Search</button>
+      </form>
+      
+      
+</section>
+
             <h2>Transform your wardrobe</h2>
             <p>
             Wanna be the best version of yourself?    
