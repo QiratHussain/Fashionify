@@ -47,16 +47,20 @@ class User( UserMixin ,db.Model):
     email: Mapped[str] = mapped_column(String(250),unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(250), nullable=False)
 
-class Cart(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-
 class Product(db.Model):
+    __tablename__= "products"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(50),nullable=False)
     img_url: Mapped[str] = mapped_column(String(500), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+class Cart(db.Model):
+    __tablename__= "cart_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False)
 
 
 with app.app_context():
@@ -124,7 +128,10 @@ def search():
 
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
-    # TODO: actually store item_id in the session or a Cart table
+    with app.app_context():
+        new_cart = Cart(name= "Name", user_id= current_user.id, product_id= item_id)
+        db.session.add(new_cart)
+        db.session.commit()
     flash("Added to cart ✓")
     return redirect(request.referrer or url_for("search"))
 
