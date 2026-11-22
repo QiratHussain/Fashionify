@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Float
+from sqlalchemy import Integer, String, Float, ForeignKey
 import os
 from dotenv import load_dotenv
 
@@ -21,12 +21,16 @@ db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
 class User( UserMixin ,db.Model):
+    __tablename__= "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(250), nullable=False)
     password: Mapped[str] = mapped_column(String(250), nullable=False)
 
-
+class Cart(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
 
 class Product(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
