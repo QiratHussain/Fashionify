@@ -18,8 +18,8 @@ db.init_app(app)
 
 class Product(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    subtitle: Mapped[str] = mapped_column(String(500), nullable=False)
+    title: Mapped[str] = mapped_column(String(50),nullable=False)
+    img_url: Mapped[str] = mapped_column(String(500), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
 
 
@@ -57,8 +57,6 @@ if __name__=="__main__":
 # TODO: 10. login page
 # TODO: 11. checkout page
 # TODO: 12. thankyou page
-# TODO: 13. search option 
-# TODO: 14. check for searched obj
 # TODO: 15. adjustable header
 # TODO: 16. payment system
 # TODO: 17. add_to_cart function
