@@ -27,6 +27,11 @@ class RegisterForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired(), Length(8)])
     submit = SubmitField("Sign Me Up!")
 
+class LoginForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Login!")
+
 # -------------------------------- DATABASES -----------------------------
 class Base(DeclarativeBase):
     pass
@@ -84,9 +89,15 @@ def signup():
                 new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= hashed_and_salted_password)
                 db.session.add(new_user)
                 db.session.commit()
+                login_user(new_user)
                 return redirect(url_for("home"))
 
     return render_template("signup.html", form= reg_form)
+
+@app.route("/login", methods=['POST','GET'])
+def login():
+    login_form= LoginForm()
+    return render_template("login.html", form= login_form)
 
 @app.route("/search")
 def search():
