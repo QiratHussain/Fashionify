@@ -74,10 +74,16 @@ def signup():
     reg_form= RegisterForm()
     if reg_form.validate_on_submit():
         with app.app_context():
-            new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= reg_form.password.data)
-            db.session.add(new_user)
-            db.session.commit()
-            return redirect(url_for("home"))
+            user= db.session.execute(db.select(User).where(User.name == reg_form.name.data )).scalar()
+            if user:
+                flash("User already present. Try Loggin In")
+                return redirect(url_for("home"))
+            else:
+                new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= reg_form.password.data)
+                db.session.add(new_user)
+                db.session.commit()
+                return redirect(url_for("home"))
+
     return render_template("signup.html", form= reg_form)
 
 @app.route("/search")
