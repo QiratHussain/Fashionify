@@ -43,8 +43,8 @@ db.init_app(app)
 class User( UserMixin ,db.Model):
     __tablename__= "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(250), nullable=False)
+    name: Mapped[str] = mapped_column(String(250), nullable=False)
+    email: Mapped[str] = mapped_column(String(250),unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(250), nullable=False)
 
 class Cart(db.Model):
@@ -80,10 +80,10 @@ def signup():
     reg_form= RegisterForm()
     if reg_form.validate_on_submit():
         with app.app_context():
-            user= db.session.execute(db.select(User).where(User.name == reg_form.name.data )).scalar()
+            user= db.session.execute(db.select(User).where(User.email == reg_form.email.data )).scalar()
             if user:
                 flash("User already present. Try Loggin In")
-                return redirect(url_for("home"))
+                return redirect(url_for("login"))
             else:
                 hashed_and_salted_password = generate_password_hash(reg_form.password.data, method='pbkdf2:sha256', salt_length=8)
                 new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= hashed_and_salted_password)
@@ -97,6 +97,17 @@ def signup():
 @app.route("/login", methods=['POST','GET'])
 def login():
     login_form= LoginForm()
+    if login_form.validate_on_submit():
+        user= db.session.execute(db.select(User).where(User.email == login_form.email.data )).scalar()
+        if not user:
+            flash("Not found. Sign up instead.")
+            return redirect(url_for("signup"))
+        elif not check_password_hash(user.password, login_form.password.data):
+            flash("Incorrect Password.")
+        else:
+            login_user(user)
+            return redirect(url_for("home"))
+
     return render_template("login.html", form= login_form)
 
 @app.route("/search")
