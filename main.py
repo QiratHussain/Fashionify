@@ -73,7 +73,7 @@ def load_user(user_id):
 # -------------------------------- ROUTES --------------------------------
 @app.route("/", methods= ['POST','GET'])
 def home():
-    return render_template("index.html")
+    return render_template("index.html", user=current_user)
 
 @app.route("/signup", methods=['POST','GET'])
 def signup():
@@ -92,7 +92,7 @@ def signup():
                 login_user(new_user)
                 return redirect(url_for("home"))
 
-    return render_template("signup.html", form= reg_form)
+    return render_template("signup.html",user= current_user ,form= reg_form)
 
 @app.route("/login", methods=['POST','GET'])
 def login():
@@ -108,7 +108,7 @@ def login():
             login_user(user)
             return redirect(url_for("home"))
 
-    return render_template("login.html", form= login_form)
+    return render_template("login.html",user= current_user, form= login_form)
 
 @app.route("/logout")
 def logout():
@@ -119,7 +119,7 @@ def logout():
 def search():
     searched_item = request.args.get("search", "")
     products_list = db.session.execute(db.select(Product).where(Product.title.ilike(f"%{searched_item}%"))).scalars().all()
-    return render_template("product.html", product_name=searched_item, items=products_list)
+    return render_template("product.html",user= current_user, product_name=searched_item, items=products_list)
 
 
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
@@ -140,16 +140,10 @@ if __name__=="__main__":
 
 
 # TODO: 5. users' products db
-# TODO: 6. product page
-# TODO: 7. not_found page
 # TODO: 8. buy page
-# TODO: 9. signup page
-# TODO: 10. login page
 # TODO: 11. checkout page
 # TODO: 12. thankyou page
-# TODO: 15. adjustable header
 # TODO: 16. payment system
 # TODO: 17. add_to_cart function
 # TODO: 18. flexible searching
 # TODO: 19. check inventory
-
