@@ -5,13 +5,26 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float, ForeignKey
 import os
 from dotenv import load_dotenv
+from flask_wtf import FlaskForm
+from wtforms import StringField,SubmitField, PasswordField
+from wtforms.validators import DataRequired, Email, Length
+from flask_bootstrap import Bootstrap5
 
 load_dotenv()
 
 app= Flask(__name__)
 # -------------------------------- CONFIG --------------------------------
 app.config["SECRET_KEY"] = os.getenv("CSRF")
+app.config['WTF_CSRF_TIME_LIMIT'] = None  
+Bootstrap5(app)
 
+
+# -------------------------------- FORMS --------------------------------
+class RegisterForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired(), Length(8)])
+    submit = SubmitField("Sign Me Up!")
 
 # -------------------------------- DATABASES -----------------------------
 class Base(DeclarativeBase):
@@ -58,7 +71,8 @@ def home():
 
 @app.route("/signup")
 def signup():
-    return render_template("signup.html")
+    reg_form= RegisterForm()
+    return render_template("signup.html", form= reg_form)
 
 @app.route("/search")
 def search():
