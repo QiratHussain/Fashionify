@@ -1,7 +1,31 @@
 from flask import Flask, render_template, redirect, url_for, request
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Integer, String, Float
 
 app= Flask(__name__)
 # -------------------------------- CONFIG --------------------------------
+
+
+# -------------------------------- DATABASES --------------------------------
+class Base(DeclarativeBase):
+    pass
+
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///products.db"
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
+
+
+class Product(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    subtitle: Mapped[str] = mapped_column(String(500), nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+
+with app.app_context():
+    db.create_all()
 
 # -------------------------------- ROUTES --------------------------------
 @app.route("/", methods= ['POST','GET'])
@@ -12,7 +36,10 @@ def home():
 @app.route("/search")
 def search():
     searched_item = request.args.get("search") 
-    
+    with app.app_context():
+        products_list= db.session.execute(db.select(Product).where(Product.title == searched_item)).scalars().all()
+        if products_list:
+            return render_template("product.html", product_name= searched_item,items= products_list )
     return render_template("product.html", product_name=searched_item)
 
 # ------------------------------------------------------------------------
@@ -35,3 +62,4 @@ if __name__=="__main__":
 # TODO: 15. adjustable header
 # TODO: 16. payment system
 # TODO: 17. add_to_cart function
+# TODO: 18. flexible searching
