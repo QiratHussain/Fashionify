@@ -1,3 +1,15 @@
+from flask import Flask, render_template, redirect, url_for
+
+app= Flask(__name__)
+# -------------------------------- CONFIG --------------------------------
+
+# -------------------------------- ROUTES --------------------------------
+
+# ------------------------------------------------------------------------
+if __name__=="__main__":
+    app.run(debug=True)
+
+
 # TODO: 1. create flask app
 # TODO: 2. create homepage
 # TODO: 3. users db
