@@ -4,6 +4,7 @@ from flask_login import UserMixin, LoginManager, login_user, logout_user, curren
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float, ForeignKey
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from flask_wtf import FlaskForm
 from wtforms import StringField,SubmitField, PasswordField
@@ -79,7 +80,8 @@ def signup():
                 flash("User already present. Try Loggin In")
                 return redirect(url_for("home"))
             else:
-                new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= reg_form.password.data)
+                hashed_and_salted_password = generate_password_hash(reg_form.password.data, method='pbkdf2:sha256', salt_length=8)
+                new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= hashed_and_salted_password)
                 db.session.add(new_user)
                 db.session.commit()
                 return redirect(url_for("home"))
