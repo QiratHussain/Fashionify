@@ -69,9 +69,15 @@ def load_user(user_id):
 def home():
     return render_template("index.html")
 
-@app.route("/signup")
+@app.route("/signup", methods=['POST','GET'])
 def signup():
     reg_form= RegisterForm()
+    if reg_form.validate_on_submit():
+        with app.app_context():
+            new_user = User(name= reg_form.name.data, email= reg_form.email.data, password= reg_form.password.data)
+            db.session.add(new_user)
+            db.session.commit()
+            return redirect(url_for("home"))
     return render_template("signup.html", form= reg_form)
 
 @app.route("/search")
