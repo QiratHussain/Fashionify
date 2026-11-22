@@ -142,6 +142,28 @@
             font-size: 0.9rem;
             color: var(--text-muted);
         }
+
+        .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(45deg, #d87093, #9370db);
+    color: #fff;
+    padding: 0.8rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: toast-in-out 3s ease forwards;
+}
+
+@keyframes toast-in-out {
+    0%   { opacity: 0; transform: translateY(20px); }
+    10%  { opacity: 1; transform: translateY(0); }
+    80%  { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(20px); visibility: hidden; }
+}
         {% block style %}
         {% endblock %}
     </style>
@@ -160,7 +182,15 @@
             </ul>
         </nav>
     </header>
-
+<section>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="toast">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+</section>
 {% block content %}
 {% endblock %}
 

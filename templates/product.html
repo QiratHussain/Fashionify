@@ -121,10 +121,10 @@
                 <p class="product-price">Rs {{ item.price }}</p>
 
                 <div class="card-actions">
-                    <form action="/cart/add/{{ item.id }}" method="post">
+                    <form action="/cart/add/{{item.id}}" method="post">
                         <button type="submit" class="btn btn-cart">Add to Cart</button>
                     </form>
-                    <form action="/buy/{{ item.id }}" method="post">
+                    <form action="/buy/{{item.id}}" method="post">
                         <button type="submit" class="btn btn-buy">Buy</button>
                     </form>
                 </div>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float
@@ -35,12 +35,22 @@ def home():
 
 @app.route("/search")
 def search():
-    searched_item = request.args.get("search") 
-    with app.app_context():
-        products_list= db.session.execute(db.select(Product).where(Product.title == searched_item)).scalars().all()
-        if products_list:
-            return render_template("product.html", product_name= searched_item,items= products_list )
-    return render_template("product.html", product_name=searched_item)
+    searched_item = request.args.get("search", "")
+    products_list = db.session.execute(db.select(Product).where(Product.title.ilike(f"%{searched_item}%"))).scalars().all()
+    return render_template("product.html", product_name=searched_item, items=products_list)
+
+
+@app.route("/cart/add/<int:item_id>", methods=["POST"])
+def add_to_cart(item_id):
+    # TODO: actually store item_id in the session or a Cart table
+    flash("Added to cart ✓")
+    return redirect(request.referrer or url_for("search"))
+
+
+@app.route("/buy/<int:item_id>", methods=["POST"])
+def buy(item_id):
+    # TODO: checkout logic
+    return redirect(request.referrer or url_for("search"))
 
 # ------------------------------------------------------------------------
 if __name__=="__main__":
@@ -48,7 +58,6 @@ if __name__=="__main__":
 
 
 # TODO: 3. users db
-# TODO: 4. products db
 # TODO: 5. users' products db
 # TODO: 6. product page
 # TODO: 7. not_found page
@@ -61,3 +70,5 @@ if __name__=="__main__":
 # TODO: 16. payment system
 # TODO: 17. add_to_cart function
 # TODO: 18. flexible searching
+# TODO: 19. check inventory
+
