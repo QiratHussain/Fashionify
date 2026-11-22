@@ -4,14 +4,16 @@ app= Flask(__name__)
 # -------------------------------- CONFIG --------------------------------
 
 # -------------------------------- ROUTES --------------------------------
+@app.route("/")
+def home():
+    return render_template("index.html")
+
 
 # ------------------------------------------------------------------------
 if __name__=="__main__":
     app.run(debug=True)
 
 
-# TODO: 1. create flask app
-# TODO: 2. create homepage
 # TODO: 3. users db
 # TODO: 4. products db
 # TODO: 5. users' products db
