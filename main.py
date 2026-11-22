@@ -110,6 +110,11 @@ def login():
 
     return render_template("login.html", form= login_form)
 
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for("home"))
+
 @app.route("/search")
 def search():
     searched_item = request.args.get("search", "")
