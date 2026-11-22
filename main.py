@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
+from flask_login import UserMixin, LoginManager, login_user, logout_user, current_user
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float, ForeignKey
 import os
@@ -12,7 +12,8 @@ app= Flask(__name__)
 # -------------------------------- CONFIG --------------------------------
 app.config["SECRET_KEY"] = os.getenv("CSRF")
 
-# -------------------------------- DATABASES --------------------------------
+
+# -------------------------------- DATABASES -----------------------------
 class Base(DeclarativeBase):
     pass
 
@@ -41,6 +42,14 @@ class Product(db.Model):
 
 with app.app_context():
     db.create_all()
+
+# -------------------------------- LOGIN MANAGER --------------------------------
+
+login_manager= LoginManager()
+login_manager.init_app(app)
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 # -------------------------------- ROUTES --------------------------------
 @app.route("/", methods= ['POST','GET'])
