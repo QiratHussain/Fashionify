@@ -36,7 +36,18 @@ class LoginForm(FlaskForm):
 class Base(DeclarativeBase):
     pass
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///products.db"
+database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("DATABASE_URL is not set. Add your Neon connection string to .env")
+# Neon/Heroku-style URLs start with postgres:// or postgresql://; SQLAlchemy needs the driver named.
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# Neon suspends idle compute and drops idle connections, so test each connection before use.
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_recycle": 300}
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
