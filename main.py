@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, LoginManager, login_user, logout_user, current_user
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from flask_login import UserMixin, LoginManager, login_user, logout_user, current_user, login_required 
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Float, ForeignKey
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -56,12 +56,11 @@ class Product(db.Model):
 
 
 class Cart(db.Model):
-    __tablename__= "cart_items"
+    __tablename__ = "cart_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(250), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False)
-
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False) 
 
 with app.app_context():
     db.create_all()
@@ -125,16 +124,15 @@ def search():
     products_list = db.session.execute(db.select(Product).where(Product.title.ilike(f"%{searched_item}%"))).scalars().all()
     return render_template("product.html",user= current_user, product_name=searched_item, items=products_list)
 
-
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
+@login_required
 def add_to_cart(item_id):
-    with app.app_context():
-        new_cart = Cart(name= "Name", user_id= current_user.id, product_id= item_id)
-        db.session.add(new_cart)
-        db.session.commit()
-    flash("Added to cart ✓")
+    product = db.get_or_404(Product, item_id)   # 404 if the product doesn't exist
+    new_cart = Cart(name=product.title, user_id=current_user.id, product_id=product.id)
+    db.session.add(new_cart)
+    db.session.commit()
+    flash(f"{product.title} added to cart ✓")
     return redirect(request.referrer or url_for("search"))
-
 
 @app.route("/buy/<int:item_id>", methods=["POST"])
 def buy(item_id):
@@ -145,12 +143,8 @@ def buy(item_id):
 if __name__=="__main__":
     app.run(debug=True)
 
-
-# TODO: 5. users' products db
 # TODO: 8. buy page
 # TODO: 11. checkout page
 # TODO: 12. thankyou page
 # TODO: 16. payment system
-# TODO: 17. add_to_cart function
-# TODO: 18. flexible searching
 # TODO: 19. check inventory
