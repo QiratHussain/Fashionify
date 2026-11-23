@@ -161,7 +161,6 @@ if __name__=="__main__":
 
 
 # TODO: 8. buy page
-# TODO: 11. checkout page
 # TODO: 12. thankyou page
 # TODO: 16. payment system
 # TODO: 19. check inventory
