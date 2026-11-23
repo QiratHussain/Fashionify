@@ -146,9 +146,19 @@ def cart():
     ).scalars().all()
     return render_template("cart.html", items=items, user=current_user)
 
+@app.route("/checkout")
+@login_required
+def checkout():
+    items = db.session.execute(
+        db.select(Cart).where(Cart.user_id == current_user.id)
+    ).scalars().all()
+    total = sum(item.product.price for item in items)
+    return render_template("checkout.html", items=items, total=total, user= current_user)
+
 # ------------------------------------------------------------------------
 if __name__=="__main__":
     app.run(debug=True)
+
 
 # TODO: 8. buy page
 # TODO: 11. checkout page
