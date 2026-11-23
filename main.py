@@ -54,13 +54,13 @@ class Product(db.Model):
     img_url: Mapped[str] = mapped_column(String(500), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
 
-
 class Cart(db.Model):
     __tablename__ = "cart_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(250), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False) 
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False)
+    product = relationship("Product")
 
 with app.app_context():
     db.create_all()
@@ -110,7 +110,6 @@ def login():
         else:
             login_user(user)
             return redirect(url_for("home"))
-
     return render_template("login.html",user= current_user, form= login_form)
 
 @app.route("/logout")
@@ -138,6 +137,14 @@ def add_to_cart(item_id):
 def buy(item_id):
     # TODO: checkout logic
     return redirect(request.referrer or url_for("search"))
+
+@app.route("/cart")
+@login_required
+def cart():
+    items = db.session.execute(
+        db.select(Cart).where(Cart.user_id == current_user.id)
+    ).scalars().all()
+    return render_template("cart.html", items=items, user=current_user)
 
 # ------------------------------------------------------------------------
 if __name__=="__main__":
