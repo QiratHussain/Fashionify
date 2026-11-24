@@ -4,6 +4,7 @@ from flask_login import UserMixin, LoginManager, login_user, logout_user, curren
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Float, ForeignKey
 import os
+from urllib.parse import urlsplit, urlunsplit
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from flask_wtf import FlaskForm
@@ -44,13 +45,19 @@ db_url = os.environ.get("DATABASE_URL")
 if not db_url:
     raise RuntimeError("DATABASE_URL is not set.")
 
-# SQLAlchemy needs postgresql://, not postgres://
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+# Switch to the pg8000 driver (works for postgres:// and postgresql:// URLs)
+# and drop ALL query params (sslmode, channel_binding, options...) because
+# pg8000 rejects libpq-only ones. SSL is enabled via connect_args below.
+parts = urlsplit(db_url)
+db_url = urlunsplit(("postgresql+pg8000", parts.netloc, parts.path, "", ""))
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 # Neon suspends idle compute and drops idle connections, so test each one before use.
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 300}
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "connect_args": {"ssl_context": True},  # Neon requires SSL
+}
 
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
