@@ -10,6 +10,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField,SubmitField, PasswordField
 from wtforms.validators import DataRequired, Email, Length
 from flask_bootstrap import Bootstrap5
+import ssl
+from urllib.parse import urlsplit, urlunsplit
 
 load_dotenv()
 
@@ -39,13 +41,25 @@ class Base(DeclarativeBase):
 database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL is not set. Add your Neon connection string to .env")
-# Neon/Heroku-style URLs start with postgres:// or postgresql://; SQLAlchemy needs the driver named.
-if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
-elif database_url.startswith("postgresql://"):
-    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+# Force the pg8000 driver, whatever scheme the provider gives us.
+for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
+    if database_url.startswith(prefix):
+        database_url = "postgresql+pg8000://" + database_url[len(prefix):]
+        break
+
+# pg8000 doesn't understand libpq-style query params like ?sslmode=require
+# or channel_binding=require (Neon adds these), so strip them from the URL.
+database_url = urlunsplit(urlsplit(database_url)._replace(query=""))
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# Neon suspends idle compute and drops idle connections, so test each connection before use.
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    # SSL is passed as an object instead of sslmode=require
+    "connect_args": {"ssl_context": ssl.create_default_context()},
+}
 # Neon suspends idle compute and drops idle connections, so test each connection before use.
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_recycle": 300}
 db = SQLAlchemy(model_class=Base)
