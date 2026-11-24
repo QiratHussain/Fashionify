@@ -38,18 +38,17 @@ class LoginForm(FlaskForm):
 class Base(DeclarativeBase):
     pass
 
-database_url = os.getenv("DATABASE_URL")
-if not database_url:
-    raise RuntimeError("DATABASE_URL is not set. Add your Neon connection string to .env")
+db_url = os.environ.get("DATABASE_URL")
+if not db_url:
+    raise RuntimeError("DATABASE_URL is not set.")
 
-# Force the pg8000 driver, whatever scheme the provider gives us.
-for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
-    if database_url.startswith(prefix):
-        database_url = "postgresql+pg8000://" + database_url[len(prefix):]
-        break
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# pg8000 doesn't understand libpq-style query params like ?sslmode=require
-# or channel_binding=require (Neon adds these), so strip them from the URL.
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+app.config["SECRET_KEY"] = os.environ.get("CSRF", "change-me")
+
 database_url = urlunsplit(urlsplit(database_url)._replace(query=""))
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
