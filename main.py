@@ -49,8 +49,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 app.config["SECRET_KEY"] = os.environ.get("CSRF", "change-me")
 
-database_url = urlunsplit(urlsplit(database_url)._replace(query=""))
-
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 # Neon suspends idle compute and drops idle connections, so test each connection before use.
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
