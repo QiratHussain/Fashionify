@@ -176,6 +176,9 @@ def search():
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
 @login_required
 def add_to_cart(item_id):
+    if not current_user.is_authenticated:
+        flash("Log in to add item to cart")
+        return redirect(url_for("login"))
     product = db.get_or_404(Product, item_id)  # 404 if the product doesn't exist
     db.session.add(Cart(name=product.title, user_id=current_user.id, product_id=product.id))
     db.session.commit()
