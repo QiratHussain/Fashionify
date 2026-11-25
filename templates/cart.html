@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div style="width:100%; max-width:none; padding:20px;">
-  <h2>Your Cart</h2>
+  <h2>Cart Items</h2>
 
   <table style="width:100%; border-collapse:collapse;">
     <thead>
@@ -14,26 +14,22 @@
     <tbody>
       {% for item in items %}
       <tr style="border-bottom:1px solid #eee;">
-        <td style="padding:10px;">
-          <img src="{{ item.product.img_url }}" width="120" alt="{{ item.name }}">
-        </td>
+        <td style="padding:10px;"><img src="{{ item.product.img_url }}" width="80" alt="{{ item.name }}"></td>
         <td style="padding:10px;">{{ item.name }}</td>
-        <td style="padding:10px;">${{ item.product.price }}</td>
+        <td style="padding:10px;">Rs. {{ item.product.price }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <h3 style="text-align:right; margin-top:20px;">
-    Total: ${{ items | sum(attribute='product.price') }}
-  </h3>
+  <h3 style="text-align:right; margin-top:20px;">Total: Rs. {{ total }}</h3>
 
-  <div style="text-align:right; margin-top:15px;">
-    <a href="{{ url_for('checkout') }}"
-       style="display:inline-block; padding:12px 30px; background:#e0b0ff; color:#fff;
-              text-decoration:none; border-radius:5px; font-size:16px;">
-      Checkout
-    </a>
-  </div>
+  <form action="{{ url_for('home') }}" method="POST" style="text-align:right; margin-top:15px;">
+    <button type="submit"
+            style="padding:12px 30px; background:#b565a7; color:#fff; border:none;
+                   border-radius:5px; font-size:16px; cursor:pointer;">
+      Pay Now
+    </button>
+  </form>
 </div>
 {% endblock %}
