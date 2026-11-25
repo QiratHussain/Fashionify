@@ -24,12 +24,13 @@
 
   <h3 style="text-align:right; margin-top:20px;">Total: Rs. {{ total }}</h3>
 
-  <form action="{{ url_for('home') }}" method="POST" style="text-align:right; margin-top:15px;">
-    <button type="submit"
-            style="padding:12px 30px; background:#b565a7; color:#fff; border:none;
-                   border-radius:5px; font-size:16px; cursor:pointer;">
-      Pay Now
-    </button>
-  </form>
+<form action="{{ url_for('pay') }}" method="POST" style="text-align:right; margin-top:15px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit"
+          style="padding:12px 30px; background:#b565a7; color:#fff; border:none;
+                 border-radius:5px; font-size:16px; cursor:pointer;">
+    Pay Now
+  </button>
+</form>
 </div>
 {% endblock %}
