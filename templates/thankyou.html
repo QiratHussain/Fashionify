@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Thank You | Fashionify{% endblock %}
+
+{% block style %}
+.thankyou {
+    max-width: 600px;
+    margin: 4rem auto;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, var(--soft-pink-bg), var(--soft-purple-bg));
+    border: 2px solid var(--baby-pink);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(181, 101, 167, 0.15);
+}
+
+.thankyou .check {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.2rem;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #d87093, #9370db);
+    color: #fff;
+    font-size: 2.8rem;
+    line-height: 80px;
+}
+
+.thankyou h1 {
+    font-size: 2.2rem;
+    color: #b565a7;
+    margin-bottom: 0.5rem;
+}
+
+.thankyou p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 0.6rem;
+}
+
+.thankyou .order-total {
+    margin: 1.2rem 0;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.thankyou .btn-home {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 12px 30px;
+    background: #b565a7;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.thankyou .btn-home:hover {
+    background: #9370db;
+}
+{% endblock %}
+
+{% block content %}
+<main>
+    <div class="thankyou">
+        <div class="check">&#10003;</div>
+        <h1>Thank you, {{ user.name }}!</h1>
+        <p>Your payment was successful and your order has been placed.</p>
+        {% if total %}
+        <p class="order-total">Total paid: Rs. {{ total }}</p>
+        {% endif %}
+        <p>We'll get your Fashionify picks ready and on their way soon.</p>
+        <a href="{{ url_for('home') }}" class="btn-home">Continue Shopping</a>
+    </div>
+</main>
+{% endblock %}
