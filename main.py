@@ -48,10 +48,30 @@ Bootstrap5(app)
 # -------------------------------- PAYMENT GATEWAY --------------------------------
 safepay = Safepay({
     "environment": "sandbox",
-    "apiKey": "sec_your_api_key",
-    "v1Secret": "your_v1_secret",
-    "webhookSecret": "your_webhook_secret",
+    "apiKey": os.getenv("API_KEY") ,
+    "v1Secret": os.getenv("SECRET_API_KEY"),
+    "webhookSecret": os.getenv("WEBHOOK_SECRET"),
 })
+
+# Step 1: Set payment details to get a tracker token
+payment_response = safepay.set_payment_details({
+    "amount": 10000,      # Amount (e.g., 10,000 PKR)
+    "currency": "PKR"     # Supported: "PKR" or "USD"
+})
+token = payment_response["data"]["token"]
+
+# Step 2: Generate the checkout URL
+checkout_url = safepay.get_checkout_url({
+    "beacon": token,
+    "cancelUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+    "redirectUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+    "orderId": "ORDER-101",  # Your internal order reference
+    "source": "custom",
+    "webhooks": True         # Enable webhook notifications
+})
+
+# Redirect the customer to `checkout_url`
+print("Redirect user to:", checkout_url)
 
 # -------------------------------- FORMS --------------------------------
 class RegisterForm(FlaskForm):
