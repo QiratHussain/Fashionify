@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, Email, Length
 from safepay_python.safepay import Safepay
+import time
 
 
 load_dotenv()
@@ -53,25 +54,25 @@ safepay = Safepay({
     "webhookSecret": os.getenv("WEBHOOK_SECRET"),
 })
 
-# Step 1: Set payment details to get a tracker token
-payment_response = safepay.set_payment_details({
-    "amount": 10000,      # Amount (e.g., 10,000 PKR)
-    "currency": "PKR"     # Supported: "PKR" or "USD"
-})
-token = payment_response["data"]["token"]
+# # Step 1: Set payment details to get a tracker token
+# payment_response = safepay.set_payment_details({
+#     "amount": 10000,      # Amount (e.g., 10,000 PKR)
+#     "currency": "PKR"     # Supported: "PKR" or "USD"
+# })
+# token = payment_response["data"]["token"]
 
-# Step 2: Generate the checkout URL
-checkout_url = safepay.get_checkout_url({
-    "beacon": token,
-    "cancelUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
-    "redirectUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
-    "orderId": "ORDER-101",  # Your internal order reference
-    "source": "custom",
-    "webhooks": True         # Enable webhook notifications
-})
+# # Step 2: Generate the checkout URL
+# checkout_url = safepay.get_checkout_url({
+#     "beacon": token,
+#     "cancelUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+#     "redirectUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+#     "orderId": "ORDER-101",  # Your internal order reference
+#     "source": "custom",
+#     "webhooks": True         # Enable webhook notifications
+# })
 
-# Redirect the customer to `checkout_url`
-print("Redirect user to:", checkout_url)
+# # Redirect the customer to `checkout_url`
+# print("Redirect user to:", checkout_url)
 
 # -------------------------------- FORMS --------------------------------
 class RegisterForm(FlaskForm):
@@ -229,6 +230,45 @@ def checkout():
     return render_template("checkout.html", items=items, total=total, user=current_user)
     
 # ---------------------------------- PAYMENT ROUTES --------------------------------------
+@app.route("/pay", methods=["POST"])
+@login_required
+def pay():
+    items = get_cart_items()
+    if not items:
+        flash("Your cart is empty.")
+        return redirect(url_for("checkout"))
+
+    total = sum(item.product.price for item in items)
+
+    # Step 1: create a tracker token with the real cart total
+    payment_response = safepay.set_payment_details({
+        "amount": int(total),   # check Safepay docs: some gateways want the smallest unit
+        "currency": "PKR",
+    })
+    token = payment_response["data"]["token"]
+
+    # Step 2: build the checkout URL
+    base_url = request.host_url.rstrip("/")
+    checkout_url = safepay.get_checkout_url({
+        "beacon": token,
+        "cancelUrl": f"{base_url}{url_for('checkout')}",
+        "redirectUrl": f"{base_url}{url_for('payment_success')}",
+        "orderId": f"ORDER-{current_user.id}-{int(time.time())}",
+        "source": "custom",
+        "webhooks": True,
+    })
+
+    # Step 3: send the customer to Safepay
+    return redirect(checkout_url)
+
+
+@app.route("/payment/success")
+@login_required
+def payment_success():
+    flash("Payment received. Thank you for your order!")
+    return redirect(url_for("home"))
+
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
