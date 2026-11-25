@@ -11,6 +11,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, Email, Length
+from safepay_python.safepay import Safepay
+
 
 load_dotenv()
 
@@ -43,7 +45,13 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,      # Neon drops idle connections, so refresh them
 }
 Bootstrap5(app)
-
+# -------------------------------- PAYMENT GATEWAY --------------------------------
+safepay = Safepay({
+    "environment": "sandbox",
+    "apiKey": "sec_your_api_key",
+    "v1Secret": "your_v1_secret",
+    "webhookSecret": "your_webhook_secret",
+})
 
 # -------------------------------- FORMS --------------------------------
 class RegisterForm(FlaskForm):
@@ -206,11 +214,14 @@ def checkout():
     items = get_cart_items()
     total = sum(item.product.price for item in items)
     return render_template("checkout.html", items=items, total=total, user=current_user)
+    
+# ---------------------------------- PAYMENT ROUTES --------------------------------------
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = request.json
+    print(data)
 
-
-
-# ------------------------------------------------------------------------
-
+    return {"status": "received"}, 200
 
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
