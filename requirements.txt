@@ -9,3 +9,4 @@ email-validator
 Bootstrap-Flask
 python-dotenv
 Werkzeug
+safepay-python
