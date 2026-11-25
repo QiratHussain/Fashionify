@@ -1,16 +1,8 @@
 import os
-
 from dotenv import load_dotenv
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_bootstrap import Bootstrap5
-from flask_login import (
-    UserMixin,
-    LoginManager,
-    login_user,
-    logout_user,
-    current_user,
-    login_required,
-)
+from flask_login import UserMixin,LoginManager,login_user,logout_user,current_user,login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from sqlalchemy import Integer, String, Float, ForeignKey
@@ -24,11 +16,9 @@ load_dotenv()
 
 app = Flask(__name__)
 
-
 # -------------------------------- CONFIG --------------------------------
 def get_db_uri() -> str:
     """Turn the Neon URL into one SQLAlchemy can use with the pg8000 driver.
-
     Neon gives: postgresql://user:pass@host/db?sslmode=require
     - the driver name must be postgresql+pg8000
     - pg8000 rejects the sslmode/channel_binding params, so the query string is
@@ -218,26 +208,6 @@ def checkout():
     items = get_cart_items()
     total = sum(item.product.price for item in items)
     return render_template("checkout.html", items=items, total=total, user=current_user)
-
-
-# -------------------------------- CLI --------------------------------
-@app.cli.command("seed")
-def seed():
-    """Add a few sample products. Run: flask --app main seed"""
-    if db.session.execute(db.select(Product)).first():
-        print("Products already exist, nothing to do.")
-        return
-    db.session.add_all([
-        Product(title="Wireless Headphones", price=59.99,
-                img_url="https://placehold.co/400x300?text=Headphones"),
-        Product(title="Mechanical Keyboard", price=89.50,
-                img_url="https://placehold.co/400x300?text=Keyboard"),
-        Product(title="USB-C Cable", price=9.99,
-                img_url="https://placehold.co/400x300?text=Cable"),
-    ])
-    db.session.commit()
-    print("Added 3 sample products.")
-
 
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
