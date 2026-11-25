@@ -221,13 +221,6 @@ def buy(item_id):
     return redirect(request.referrer or url_for("search"))
 
 
-@app.route("/cart")
-@login_required
-def cart():
-    return render_template("cart.html", items=get_cart_items(), user=current_user)
-
-
-
 @app.route("/checkout")
 @login_required
 def checkout():
