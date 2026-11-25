@@ -211,9 +211,7 @@ def checkout():
 
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
-    # use_reloader=False: the reloader starts a second Python process, which
-    # doubles memory use and startup time on a slow machine.
-    app.run(debug=True, use_reloader=False)
+    app.run()
 
 # TODO: 8. buy page
 # TODO: 11. checkout page
