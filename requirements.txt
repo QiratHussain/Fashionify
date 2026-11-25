@@ -1,7 +1,7 @@
 Flask
 Flask-SQLAlchemy
 SQLAlchemy
-psycopg2-binary
+pg8000
 Flask-Login
 Flask-WTF
 WTForms
