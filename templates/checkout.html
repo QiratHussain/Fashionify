@@ -39,7 +39,7 @@
   </div>
 
   <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-    <a href="{{ url_for('my_cart') }}" style="color:#b565a7; text-decoration:none;">&larr; Back to cart</a>
+    <a href="/cart" style="color:#b565a7; text-decoration:none;">&larr; Back to cart</a>
 
     <form action="{{ url_for('pay') }}" method="POST">
       <button type="submit"
