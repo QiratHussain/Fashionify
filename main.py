@@ -224,8 +224,11 @@ def add_to_cart(item_id):
 @app.route("/buy/<int:item_id>", methods=["POST"])
 @login_required
 def buy(item_id):
-    # TODO: checkout logic
-    return redirect(request.referrer or url_for("search"))
+    # "Buy" = put the item in the cart, then go straight to the cart page to pay
+    product = db.get_or_404(Product, item_id)
+    db.session.add(Cart(name=product.title, user_id=current_user.id, product_id=product.id))
+    db.session.commit()
+    return redirect(url_for("cart"))
 
 
 @app.route("/cart")
