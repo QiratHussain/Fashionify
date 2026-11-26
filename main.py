@@ -47,32 +47,14 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 Bootstrap5(app)
 # -------------------------------- PAYMENT GATEWAY --------------------------------
+# Created once at module level so every route (e.g. /pay) can use it.
 safepay = Safepay({
     "environment": "sandbox",
-    "apiKey": os.getenv("API_KEY") ,
+    "apiKey": os.getenv("API_KEY"),
     "v1Secret": os.getenv("SECRET_API_KEY"),
     "webhookSecret": os.getenv("WEBHOOK_SECRET"),
 })
 
-# # Step 1: Set payment details to get a tracker token
-# payment_response = safepay.set_payment_details({
-#     "amount": 10000,      # Amount (e.g., 10,000 PKR)
-#     "currency": "PKR"     # Supported: "PKR" or "USD"
-# })
-# token = payment_response["data"]["token"]
-
-# # Step 2: Generate the checkout URL
-# checkout_url = safepay.get_checkout_url({
-#     "beacon": token,
-#     "cancelUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
-#     "redirectUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
-#     "orderId": "ORDER-101",  # Your internal order reference
-#     "source": "custom",
-#     "webhooks": True         # Enable webhook notifications
-# })
-
-# # Redirect the customer to `checkout_url`
-# print("Redirect user to:", checkout_url)
 
 # -------------------------------- FORMS --------------------------------
 class RegisterForm(FlaskForm):
@@ -215,6 +197,27 @@ def add_to_cart(item_id):
     return redirect(request.referrer or url_for("search"))
 
 
+# ---------------------------------- CART PAGE --------------------------------------
+@app.route("/cart")
+@login_required
+def my_cart():
+    items = get_cart_items()
+    total = sum(item.product.price for item in items)
+    return render_template("cart.html", items=items, total=total, user=current_user)
+
+
+@app.route("/cart/remove/<int:cart_id>", methods=["POST"])
+@login_required
+def remove_from_cart(cart_id):
+    item = db.get_or_404(Cart, cart_id)
+    if item.user_id != current_user.id:  # don't let users delete other people's items
+        return redirect(url_for("my_cart"))
+    db.session.delete(item)
+    db.session.commit()
+    flash("Item removed.")
+    return redirect(url_for("my_cart"))
+
+
 @app.route("/buy/<int:item_id>", methods=["POST"])
 @login_required
 def buy(item_id):
@@ -226,9 +229,12 @@ def buy(item_id):
 @login_required
 def checkout():
     items = get_cart_items()
+    if not items:
+        flash("Your cart is empty.")
+        return redirect(url_for("my_cart"))
     total = sum(item.product.price for item in items)
     return render_template("checkout.html", items=items, total=total, user=current_user)
-    
+
 # ---------------------------------- PAYMENT ROUTES --------------------------------------
 @app.route("/pay", methods=["POST"])
 @login_required
@@ -236,13 +242,13 @@ def pay():
     items = get_cart_items()
     if not items:
         flash("Your cart is empty.")
-        return redirect(url_for("checkout"))
+        return redirect(url_for("my_cart"))
 
     total = sum(item.product.price for item in items)
 
     # Step 1: create a tracker token with the real cart total
     payment_response = safepay.set_payment_details({
-        "amount": int(total),   # check Safepay docs: some gateways want the smallest unit
+        "amount": int(total),   # check Safepay docs: some gateways want the smallest unit (paisa -> int(total * 100))
         "currency": "PKR",
     })
     token = payment_response["data"]["token"]
@@ -265,6 +271,12 @@ def pay():
 @app.route("/payment/success")
 @login_required
 def payment_success():
+    # Clear the cart once the customer comes back from Safepay.
+    # NOTE: for production, do this in /webhook after verifying Safepay's signature,
+    # because anyone can open this URL directly.
+    for item in get_cart_items():
+        db.session.delete(item)
+    db.session.commit()
     flash("Payment received. Thank you for your order!")
     return redirect(url_for("home"))
 
