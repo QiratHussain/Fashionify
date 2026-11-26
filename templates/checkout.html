@@ -1,36 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="width:100%; max-width:none; padding:20px;">
+<div style="width:100%; max-width:900px; margin:0 auto; padding:20px;">
   <h2>Checkout</h2>
+  <p style="color:#666;">Review your order, then continue to our secure payment partner, Safepay.</p>
+
+  <h4 style="margin-top:25px;">Order Summary ({{ items|length }} item{{ "s" if items|length != 1 }})</h4>
 
   <table style="width:100%; border-collapse:collapse;">
     <thead>
       <tr style="text-align:left; border-bottom:2px solid #ddd;">
         <th style="padding:10px;">Product</th>
         <th style="padding:10px;">Name</th>
-        <th style="padding:10px;">Price</th>
+        <th style="padding:10px; text-align:right;">Price</th>
       </tr>
     </thead>
     <tbody>
       {% for item in items %}
       <tr style="border-bottom:1px solid #eee;">
-        <td style="padding:10px;"><img src="{{ item.product.img_url }}" width="80" alt="{{ item.name }}"></td>
+        <td style="padding:10px;"><img src="{{ item.product.img_url }}" width="60" alt="{{ item.name }}"></td>
         <td style="padding:10px;">{{ item.name }}</td>
-        <td style="padding:10px;">Rs. {{ item.product.price }}</td>
+        <td style="padding:10px; text-align:right;">Rs. {{ "%.2f"|format(item.product.price) }}</td>
       </tr>
       {% endfor %}
     </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" style="padding:15px 10px; text-align:right; font-weight:bold;">Total (PKR)</td>
+        <td style="padding:15px 10px; text-align:right; font-weight:bold; font-size:18px;">
+          Rs. {{ "%.2f"|format(total) }}
+        </td>
+      </tr>
+    </tfoot>
   </table>
 
-  <h3 style="text-align:right; margin-top:20px;">Total: Rs. {{ total }}</h3>
+  <div style="margin-top:20px; padding:15px; background:#f8f4f8; border-radius:6px; color:#555;">
+    You will be redirected to Safepay to complete your payment. Your card details are
+    entered on Safepay's page and are never stored on this site.
+  </div>
 
-<form action="{{ url_for('pay') }}" method="POST" style="text-align:right; margin-top:15px;">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <button type="submit"
-          style="padding:12px 30px; background:#b565a7; color:#fff; border:none;
-                 border-radius:5px; font-size:16px; cursor:pointer;">
-    Pay Now
-  </button>
-</form>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+    <a href="{{ url_for('my_cart') }}" style="color:#b565a7; text-decoration:none;">&larr; Back to cart</a>
+
+    <form action="{{ url_for('pay') }}" method="POST">
+      <button type="submit"
+              style="padding:12px 30px; background:#b565a7; color:#fff; border:none;
+                     border-radius:5px; font-size:16px; cursor:pointer;">
+        Pay Rs. {{ "%.2f"|format(total) }} with Safepay
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}
