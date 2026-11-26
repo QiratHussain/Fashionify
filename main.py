@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, url_for, request, flash
+import requests
+from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin,LoginManager,login_user,logout_user,current_user,login_required
 from flask_sqlalchemy import SQLAlchemy
@@ -12,12 +13,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, Email, Length
 from safepay_python.safepay import Safepay
+from safepay_python.utils.builder import build_api_url
+from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 
 
 load_dotenv()
 
 app = Flask(__name__)
+# Behind Vercel's proxy: trust X-Forwarded-* so url_for(_external=True) builds https:// URLs
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # -------------------------------- CONFIG --------------------------------
 def get_db_uri() -> str:
@@ -47,14 +52,33 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 Bootstrap5(app)
 # -------------------------------- PAYMENT GATEWAY --------------------------------
-# Created once at module level so every route (e.g. /pay) can use it.
+SAFEPAY_ENV = "sandbox"   # change to "production" when you go live
 safepay = Safepay({
-    "environment": "sandbox",
-    "apiKey": os.getenv("API_KEY"),
+    "environment": SAFEPAY_ENV,
+    "apiKey": os.getenv("API_KEY") ,
     "v1Secret": os.getenv("SECRET_API_KEY"),
     "webhookSecret": os.getenv("WEBHOOK_SECRET"),
 })
 
+# # Step 1: Set payment details to get a tracker token
+# payment_response = safepay.set_payment_details({
+#     "amount": 10000,      # Amount (e.g., 10,000 PKR)
+#     "currency": "PKR"     # Supported: "PKR" or "USD"
+# })
+# token = payment_response["data"]["token"]
+
+# # Step 2: Generate the checkout URL
+# checkout_url = safepay.get_checkout_url({
+#     "beacon": token,
+#     "cancelUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+#     "redirectUrl": "https://fashionify-z8quguqn1-empire-e560.vercel.app/",
+#     "orderId": "ORDER-101",  # Your internal order reference
+#     "source": "custom",
+#     "webhooks": True         # Enable webhook notifications
+# })
+
+# # Redirect the customer to `checkout_url`
+# print("Redirect user to:", checkout_url)
 
 # -------------------------------- FORMS --------------------------------
 class RegisterForm(FlaskForm):
@@ -197,27 +221,6 @@ def add_to_cart(item_id):
     return redirect(request.referrer or url_for("search"))
 
 
-# ---------------------------------- CART PAGE --------------------------------------
-@app.route("/cart")
-@login_required
-def my_cart():
-    items = get_cart_items()
-    total = sum(item.product.price for item in items)
-    return render_template("cart.html", items=items, total=total, user=current_user)
-
-
-@app.route("/cart/remove/<int:cart_id>", methods=["POST"])
-@login_required
-def remove_from_cart(cart_id):
-    item = db.get_or_404(Cart, cart_id)
-    if item.user_id != current_user.id:  # don't let users delete other people's items
-        return redirect(url_for("my_cart"))
-    db.session.delete(item)
-    db.session.commit()
-    flash("Item removed.")
-    return redirect(url_for("my_cart"))
-
-
 @app.route("/buy/<int:item_id>", methods=["POST"])
 @login_required
 def buy(item_id):
@@ -225,40 +228,74 @@ def buy(item_id):
     return redirect(request.referrer or url_for("search"))
 
 
-@app.route("/checkout")
+@app.route("/cart")
 @login_required
-def checkout():
+def cart():
     items = get_cart_items()
-    if not items:
-        flash("Your cart is empty.")
-        return redirect(url_for("my_cart"))
-    total = sum(item.product.price for item in items)
-    return render_template("checkout.html", items=items, total=total, user=current_user)
+    total = round(sum(item.product.price for item in items), 2)
+    return render_template("cart.html", items=items, total=total, user=current_user)
+
+
+@app.route("/checkout")
+def checkout():
+    # Old URL: the cart page is now the checkout page.
+    return redirect(url_for("cart"))
+
 
 # ---------------------------------- PAYMENT ROUTES --------------------------------------
+def create_safepay_tracker(amount):
+    """Ask Safepay for a tracker token for this amount.
+
+    This calls Safepay's init endpoint directly instead of safepay.set_payment_details():
+    the SDK runs asyncio.get_event_loop().run_until_complete(), which raises errors on
+    modern Python / serverless (Vercel), so it was a likely source of 500s.
+    """
+    response = requests.post(
+        f"{build_api_url(SAFEPAY_ENV)}/order/v1/init",
+        json={
+            "amount": amount,
+            "client": os.getenv("API_KEY"),
+            "currency": "PKR",
+            "environment": SAFEPAY_ENV,
+        },
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json()["data"]["token"]
+
+
 @app.route("/pay", methods=["POST"])
 @login_required
 def pay():
     items = get_cart_items()
     if not items:
         flash("Your cart is empty.")
-        return redirect(url_for("my_cart"))
+        return redirect(url_for("cart"))
 
-    total = sum(item.product.price for item in items)
+    if not (os.getenv("API_KEY") and os.getenv("SECRET_API_KEY") and os.getenv("WEBHOOK_SECRET")):
+        app.logger.error("Safepay env vars (API_KEY / SECRET_API_KEY / WEBHOOK_SECRET) are not set")
+        flash("Payments are not set up yet. Please try again later.")
+        return redirect(url_for("cart"))
+
+    total = round(sum(item.product.price for item in items), 2)
 
     # Step 1: create a tracker token with the real cart total
-    payment_response = safepay.set_payment_details({
-        "amount": int(total),   # check Safepay docs: some gateways want the smallest unit (paisa -> int(total * 100))
-        "currency": "PKR",
-    })
-    token = payment_response["data"]["token"]
+    try:
+        token = create_safepay_tracker(total)
+    except (requests.RequestException, KeyError, TypeError, ValueError):
+        app.logger.exception("Safepay init failed")
+        flash("Could not start the payment. Please try again.")
+        return redirect(url_for("cart"))
+
+    # Remember which tracker we issued so /payment/success only accepts that one
+    session["safepay_tracker"] = token
 
     # Step 2: build the checkout URL
-    base_url = request.host_url.rstrip("/")
     checkout_url = safepay.get_checkout_url({
         "beacon": token,
-        "cancelUrl": f"{base_url}{url_for('checkout')}",
-        "redirectUrl": f"{base_url}{url_for('payment_success')}",
+        "cancelUrl": url_for("cart", _external=True),
+        "redirectUrl": url_for("payment_success", _external=True),
         "orderId": f"ORDER-{current_user.id}-{int(time.time())}",
         "source": "custom",
         "webhooks": True,
@@ -271,21 +308,39 @@ def pay():
 @app.route("/payment/success")
 @login_required
 def payment_success():
-    # Clear the cart once the customer comes back from Safepay.
-    # NOTE: for production, do this in /webhook after verifying Safepay's signature,
-    # because anyone can open this URL directly.
-    for item in get_cart_items():
+    expected_tracker = session.get("safepay_tracker")
+    if not expected_tracker:
+        # Nothing pending (e.g. page refreshed after a finished payment)
+        return redirect(url_for("home"))
+
+    sig = request.args.get("sig", "")
+    tracker = request.args.get("tracker", "")
+    if not (sig and tracker == expected_tracker
+            and safepay.is_signature_valid({"sig": sig, "tracker": tracker})):
+        flash("We couldn't confirm your payment. If you were charged, please contact support.")
+        return redirect(url_for("cart"))
+
+    # Payment confirmed: empty the cart and thank the customer
+    items = get_cart_items()
+    total = round(sum(item.product.price for item in items), 2)
+    for item in items:
         db.session.delete(item)
     db.session.commit()
-    flash("Payment received. Thank you for your order!")
-    return redirect(url_for("home"))
+    session.pop("safepay_tracker", None)
+    return render_template("thankyou.html", user=current_user, total=total)
 
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
-    print(data)
+    body = request.get_json(silent=True)
+    try:
+        valid = body is not None and safepay.is_webhook_valid(request.headers, body)
+    except (KeyError, TypeError):
+        valid = False
+    if not valid:
+        return {"status": "invalid signature"}, 400
 
+    app.logger.info("Safepay webhook: %s", body)
     return {"status": "received"}, 200
 
 # ------------------------------------------------------------------------
