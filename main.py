@@ -239,10 +239,19 @@ def cart():
     return render_template("cart.html", items=items, total=total, user=current_user)
 
 
+# Same page under the name `my_cart` too, so url_for('cart') and url_for('my_cart') both work
+app.add_url_rule("/cart", endpoint="my_cart", view_func=cart)
+
+
 @app.route("/checkout")
+@login_required
 def checkout():
-    # Old URL: the cart page is now the checkout page.
-    return redirect(url_for("cart"))
+    items = get_cart_items()
+    if not items:
+        flash("Your cart is empty.")
+        return redirect(url_for("cart"))
+    total = round(sum(item.product.price for item in items), 2)
+    return render_template("checkout.html", items=items, total=total, user=current_user)
 
 
 # ---------------------------------- PAYMENT ROUTES --------------------------------------
