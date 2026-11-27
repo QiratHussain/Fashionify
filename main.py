@@ -16,7 +16,7 @@ from safepay_python.safepay import Safepay
 from safepay_python.utils.builder import build_api_url
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
-
+from flask_wtf.csrf import CSRFProtect
 
 load_dotenv()
 
@@ -51,6 +51,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,      # Neon drops idle connections, so refresh them
 }
 Bootstrap5(app)
+csrf = CSRFProtect(app)
 # -------------------------------- PAYMENT GATEWAY --------------------------------
 SAFEPAY_ENV = "sandbox"   # change to "production" when you go live
 safepay = Safepay({
@@ -243,7 +244,7 @@ def cart():
 app.add_url_rule("/cart", endpoint="my_cart", view_func=cart)
 
 
-@app.route("/checkout")
+@app.route("/checkout", methods=['POST','GET'])
 @login_required
 def checkout():
     items = get_cart_items()
