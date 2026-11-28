@@ -117,8 +117,7 @@ class Cart(db.Model):
     name: Mapped[str] = mapped_column(String(250), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
-    product = relationship("Product")
-
+    product: Mapped["Product"] = relationship("Product")
 
 with app.app_context():
     db.create_all()
